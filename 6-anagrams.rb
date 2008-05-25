@@ -18,16 +18,11 @@ module AnagramHelper
   def build_anagrams(words)
     anagrams = {}
     words.each do |word|
-      w_length = word.length
-      anagrams[w_length] ||= {}
-      letter_sum = get_letter_index_sum(word)
-      anagrams[w_length][letter_sum] ||= []
-      anagrams[w_length][letter_sum] << word
+      w_letters = get_letters(word)
+      anagrams[w_letters] ||= []
+      anagrams[w_letters] << word
     end
-    anagrams.each do |w_length, words_of_length|
-      words_of_length.delete_if { |letter_sum, words| words.length == 1 }
-    end
-    anagrams.delete_if { |w_length, words_of_length| words_of_length.length == 0  }
+    anagrams.delete_if { |letters, words_with_letters| words_with_letters.length == 1 }
   end
   
 end
@@ -35,16 +30,14 @@ end
 def anagrams_from_file(file)
   lines = IO.readlines(file)
   anagrams = build_anagrams(lines.map { |line| line.chomp })
-  pp anagrams
+  #pp anagrams
   return anagrams
 end
 
 def get_number_of_anagrams(file)
-  num_of_anagrams = anagrams_from_file(file).inject(0) do |total_anagrams, anagrams_by_length|
-    anagrams_by_letter_sum = anagrams_by_length[1]
-    total_anagrams + anagrams_by_letter_sum.inject(0) { |sum_for_anagram_length, var| sum_for_anagram_length + var.length }
+  anagrams_from_file(file).inject(0) do |total_anagrams, anagrams_by_letters|
+    total_anagrams + anagrams_by_letters[1].length
   end
-  return num_of_anagrams
 end
 
 def read_lines
@@ -78,15 +71,16 @@ if __FILE__ == $0
     end
     
     def test_build_anagrams
-      anagrams_by_length = build_anagrams(['kinship','pinkish','knits','stink','rots','sort','milk','choose','soccer'])
-      assert_equal(true, anagrams_by_length.key?(7))
-      assert_equal(true, anagrams_by_length.key?(5))
-      assert_equal(true, anagrams_by_length.key?(4))
-      assert_equal(false, anagrams_by_length.key?(6))
-      assert_equal(false, anagrams_by_length.key?(3))
-      assert_equal(true, anagrams_by_length[7].values.include?(['kinship', 'pinkish']))
-      assert_equal(true, anagrams_by_length[5].values.include?(['knits', 'stink']))      
+      anagrams = build_anagrams(['kinship','pinkish','knits','stink','rots','sort','milk','choose','soccer'])
+      assert_equal(true, anagrams.key?('hiiknps'))
+      assert_equal(true, anagrams.key?('iknst'))
+      assert_equal(true, anagrams.key?('orst'))
+      assert_equal(false, anagrams.key?('ĭklm'))
+      assert_equal(false, anagrams.key?('cehoos'))
+      assert_equal(['kinship', 'pinkish'], anagrams['hiiknps'])
+      assert_equal(['knits', 'stink'], anagrams['iknst']) 
     end
+    
     def test_get_number_of_anagrams
       puts get_number_of_anagrams('5-wordlist.txt')
     end
