@@ -1,0 +1,19 @@
+Product
+Price
+Discount
+Purchase
+Cost
+
+Product
+
+A Product has a Price, and can have a Discount.
+Cost is how much one should pay for a certain amount (a Purchase) of the Product.
+(e.g if bean cans are for $0.4, or 3 for $1, 2 bean cans cost $0.8, 3 bean cans cost $1, 4 bean cans cost $1.4)
+
+In this setup, Price and Cost are the same thing.
+
+Discount
+- type
+    - normal
+    - every xth free (None, 2, 3, ...)
+    - bundle (e.g 3 for $1)

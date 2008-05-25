@@ -1,0 +1,7 @@
+http://codekata.pragprog.com/2007/01/kata_three_how_.html
+
+How big?
+
+- 10, 20, 30, 40, 44
+- (256 byte + 1024 byte + 12 byte) * 20000 = 25.840.000 byte (25, 234 Mbyte)
+- log(10**6, 2) = 19.93, 20 levels; 1.000.000 * 32 bit = 4.000.000 byte ~ 4 Mbyte
