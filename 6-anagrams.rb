@@ -34,10 +34,19 @@ def anagrams_from_file(file)
   return anagrams
 end
 
-def get_number_of_anagrams(file)
-  anagrams_from_file(file).inject(0) do |total_anagrams, anagrams_by_letters|
-    total_anagrams + anagrams_by_letters[1].length
+def get_anagrams_statistics(file)
+  total_num_of_anagrams = 0
+  longest_anagrams = []
+  most_anagrams = []
+  anagrams = anagrams_from_file(file)
+  anagrams.each do |letters, anagrams_with_letters|
+    total_num_of_anagrams += anagrams_with_letters.length
+    longest_anagrams = anagrams_with_letters if longest_anagrams.empty? || letters.length > longest_anagrams[0].length
+    most_anagrams = anagrams_with_letters if most_anagrams.empty? || anagrams_with_letters.length > most_anagrams.length
   end
+  puts "Total anagrams: #{total_num_of_anagrams}"
+  puts "Longest anagrams: #{longest_anagrams.inspect}"
+  puts "Most anagrams: #{most_anagrams.inspect}"
 end
 
 def read_lines
@@ -75,14 +84,14 @@ if __FILE__ == $0
       assert_equal(true, anagrams.key?('hiiknps'))
       assert_equal(true, anagrams.key?('iknst'))
       assert_equal(true, anagrams.key?('orst'))
-      assert_equal(false, anagrams.key?('ĭklm'))
+      assert_equal(false, anagrams.key?('iklm'))
       assert_equal(false, anagrams.key?('cehoos'))
       assert_equal(['kinship', 'pinkish'], anagrams['hiiknps'])
       assert_equal(['knits', 'stink'], anagrams['iknst']) 
     end
     
-    def test_get_number_of_anagrams
-      puts get_number_of_anagrams('5-wordlist.txt')
+    def test_get_anagrams_statistics
+      puts get_anagrams_statistics('5-wordlist.txt')
     end
   end
 end
