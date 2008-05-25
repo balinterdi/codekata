@@ -45,8 +45,8 @@ def get_anagrams_statistics(file)
     most_anagrams = anagrams_with_letters if most_anagrams.empty? || anagrams_with_letters.length > most_anagrams.length
   end
   puts "Total anagrams: #{total_num_of_anagrams}"
-  puts "Longest anagrams: #{longest_anagrams.inspect}"
-  puts "Most anagrams: #{most_anagrams.inspect}"
+  puts "Longest anagrams: #{longest_anagrams.inspect} (#{longest_anagrams[0].length})"
+  puts "Most anagrams: #{most_anagrams.inspect} (#{most_anagrams.length})"
 end
 
 def read_lines
