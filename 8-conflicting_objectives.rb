@@ -77,8 +77,34 @@ def find_composing_words_ultra_slow(words, word_length)
   end
   #FIXME: the found prefixes and suffixes would have to be matched
   # (e.g a prefix of al and a suffix of bums could make album)
-  # but this approach is ultra-slow so I am abandoning
+  # but this approach is ultra-slow already at this point so I am abandoning
 end  
+
+def find_composing_words_slow(words, word_length)
+#  user     system      total        real
+#  155.110000   0.400000 155.510000 (156.856689)
+#  Finished in 156.916954 seconds.  
+  composed = {}
+  composing_words = {}
+  read_upto_x_char_words(words, word_length - 1).each { |w| composing_words[w] = true }
+  words_to_compose = words.select { |w| w.length == word_length }
+  words_to_compose.each do |word_to_compose|
+    composing_words.each_pair do |composing_word, marker|
+      if prefix?(word_to_compose, composing_word)
+        first_part = composing_word
+        second_part = word_to_compose[composing_word.length...word_to_compose.length]
+        if composing_words.key?(second_part)
+          # puts "Composed word found: #{word_to_compose} = #{first_part} + #{second_part}"
+          composed[word_to_compose] = [first_part, second_part]
+          break
+        end
+      end
+    end
+  end
+  #pp composed
+  composed
+end
+
 
 if __FILE__ == $0
   class ModuleTester < Test::Unit::TestCase
@@ -112,6 +138,14 @@ if __FILE__ == $0
       assert_equal(compound_words['jigsaw'], ['jig', 'saw'])
       assert_equal(compound_words['tailor'], ['tail', 'or'])      
     end
+
+    def test_get_prefixes
+      assert_equal(['p', 'pr', 'pre', 'pref', 'prefi'], get_prefixes('prefix'))
+    end
+    
+    def test_suffixes
+      assert_equal(['uffix', 'ffix', 'fix', 'ix', 'x'], get_suffixes('suffix'))
+    end
     
     def XXXtest_find_composing_words_readable_big_dict
       if @do_long_operations
@@ -119,15 +153,16 @@ if __FILE__ == $0
         Benchmark.bm do |bm|
           bm.report { find_composing_words_readable(words, 6) }
         end
-      end 
+      end
     end
-    
-    def test_get_prefixes
-      assert_equal(['p', 'pr', 'pre', 'pref', 'prefi'], get_prefixes('prefix'))
-    end
-    
-    def test_suffixes
-      assert_equal(['uffix', 'ffix', 'fix', 'ix', 'x'], get_suffixes('suffix'))
+
+    def XXXtest_find_composing_words_slow
+      if @do_long_operations
+        words = read_lines('5-wordlist.txt')
+        Benchmark.bm do |bm|
+          bm.report { find_composing_words_fast(words, 6) }
+        end
+      end
     end
     
     def XXXtest_find_composing_words_ultra_slow
