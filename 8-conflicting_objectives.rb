@@ -1,17 +1,30 @@
 require 'test/unit'
 require "benchmark"
 require "pp"
+require "extensions"
 
 def read_lines(file)
   IO.readlines(file).map { |line| line.chomp }
+end
+
+def read_upto_x_char_words(words, x)
+  words.select { |w| w.length <= x }
 end
 
 def prefix?(word, prefix)
   prefix.empty? || word[0...prefix.length] == prefix
 end
 
-def read_upto_x_char_words(words, x)
-  words.select { |w| w.length <= x }
+def suffix?(word, suffix)
+  suffix.empty? || word[-suffix.length..-1] == suffix
+end
+
+def get_prefixes(word)
+  (0...word.length-1).inject([]) { |prefixes, prefix_length| prefixes << word[0..prefix_length]}
+end
+
+def get_suffixes(word)
+  (1..word.length-1).inject([]) { |suffixes, suffix_length| suffixes << word[suffix_length..word.length]}
 end
 
 def find_composing_words_readable(words, word_length)
@@ -35,14 +48,6 @@ def find_composing_words_readable(words, word_length)
   end
 #  pp composed
   composed
-end
-
-def get_prefixes(word)
-  (0...word.length-1).inject([]) { |prefixes, prefix_length| prefixes << word[0..prefix_length]}
-end
-
-def get_suffixes(word)
-  (1..word.length-1).inject([]) { |suffixes, suffix_length| suffixes << word[suffix_length..word.length]}
 end
 
 def find_composing_words_ultra_slow(words, word_length)
@@ -105,6 +110,56 @@ def find_composing_words_slow(words, word_length)
   composed
 end
 
+def get_composing_parts_for_word(word, composing_parts)
+end
+
+def find_composing_words_by_word_pairs(words, word_length)
+  # go through words and make a hash where the keys are the lengths of
+  # each word (up to a max. of the length we want, 6 in this case)
+  # then find pairs that give this length (1-5, 4-2, 3-3) and see for each 6-letter word
+  # if it can be composed of the pairs
+  
+  # if words_to_compose is an array, the algo is hyper slow:
+  # user     system      total        real
+  # 376.200000   1.580000 377.780000 (380.960512)
+  # .......
+  # Finished in 381.020869 seconds.
+  
+  # but when converted to a hash, it becomes ultra fast!
+  #       user     system      total        real
+  # number of words that should be composed somehow: 6177
+  # Checking 49 x 2236 = 109564 words
+  # Checking 536 x 536 = 287296 words
+  # Checking 2236 x 49 = 109564 words
+  #   0.580000   0.010000   0.590000 (  0.602888)
+  # .......
+  # Finished in 0.662462 seconds.
+  
+  composed = {}
+  composing_words = read_upto_x_char_words(words, word_length - 1)
+  composing_words_by_length = composing_words.partition_into_groups { |w| w.length }
+  words_to_compose = {}
+  words.select { |w| w.length == word_length }.each { |w| words_to_compose[w] = 1 }
+  puts "number of words that should be composed: #{words_to_compose.length}"
+  1.upto(word_length-1) do |n|
+    prefixes = composing_words_by_length[n]
+    suffixes = composing_words_by_length[word_length-n]
+    if prefixes.nil? || suffixes.nil?
+      next
+    end
+    puts "Checking #{prefixes.length} x #{suffixes.length} = #{prefixes.length*suffixes.length} words"
+    prefixes.each do |prefix|
+      suffixes.each do |suffix|
+        a_word = prefix + suffix
+        if words_to_compose.key?(a_word)
+          composed[a_word] = [prefix, suffix]
+        end
+      end
+    end
+  end
+  composed
+end
+
 
 if __FILE__ == $0
   class ModuleTester < Test::Unit::TestCase
@@ -118,8 +173,20 @@ if __FILE__ == $0
       assert_equal(true, prefix?('apple', 'ap'))
       assert_equal(true, prefix?('apple', 'a'))
       assert_equal(true, prefix?('apple', ''))            
+      assert_equal(true, prefix?('apple', 'apple'))
       assert_equal(false, prefix?('apple', 'ape'))
       assert_equal(false, prefix?('', 'a'))      
+    end
+    
+    def test_suffix?
+      assert_equal(true, suffix?('apple', 'e'))
+      assert_equal(true, suffix?('apple', 'le'))
+      assert_equal(true, suffix?('apple', 'ple'))
+      assert_equal(true, suffix?('apple', 'pple'))
+      assert_equal(true, suffix?('apple', 'apple'))
+      assert_equal(true, suffix?('apple', ''))
+      assert_equal(false, suffix?('apple', 'a'))
+      assert_equal(false, suffix?('', 'a'))            
     end
     
     def test_read_upto_x_char_words
@@ -143,7 +210,7 @@ if __FILE__ == $0
       assert_equal(['p', 'pr', 'pre', 'pref', 'prefi'], get_prefixes('prefix'))
     end
     
-    def test_suffixes
+    def test_get_suffixes
       assert_equal(['uffix', 'ffix', 'fix', 'ix', 'x'], get_suffixes('suffix'))
     end
     
@@ -172,6 +239,15 @@ if __FILE__ == $0
           bm.report { find_composing_words_ultra_slow(words, 6) }
         end
       end
+    end
+    
+    def test_find_composing_words_by_word_pairs
+      if @do_long_operations
+        words = read_lines('5-wordlist.txt')
+        Benchmark.bm do |bm|
+          bm.report { find_composing_words_by_word_pairs(words, 6) }
+        end
+      end  
     end
     
   end
