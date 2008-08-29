@@ -1,10 +1,12 @@
 # see http://codekata.pragprog.com/2007/01/kata_nine_back_.html
+# The challenge description doesn’t mention the format of the pricing rules. How can these be specified in such a way that the checkout doesn’t know about particular items and their pricing strategies? How can we make the design flexible enough so that we can add new styles of pricing rule in the future? 
+
+# The above meaning, not only "3 for 130" type of pricing rules, but also "buy 2, get one for free"
+
 require 'test/unit'
 
 class CheckOut
   
-	attr_reader :items
-	
 	def self.process_rules(rules)
 		rules
 	end
@@ -21,27 +23,27 @@ class CheckOut
 		@items[item] += 1
 	end
 	
+	def price_for_sku(sku_id, num_of_sku_items)
+		# returns the price of num_of_sku_items of sku_id type of sku-s
+		price = 0
+		rem_items = num_of_sku_items
+		rules_for_sku = @rules[sku_id].sort.reverse
+		while rem_items > 0 do
+			rules_for_sku.each do |sku_quantity, sku_price|
+				num_of_pack_items, mod_rem_items = rem_items.divmod(sku_quantity)
+				unless num_of_pack_items.zero?
+					price += num_of_pack_items * sku_price
+					rem_items = mod_rem_items
+				end
+			end				
+		end
+		price
+	end
+	
 	def total
 		# items: { A => 3, B => 8, C => 1 }
 		# rules: { A => { 2 => 50, 1 => 30 }, B => { 5 => 100, 3 => 65, 1 => 25 }, C => { 3 => 100, 1 => 40 } }
-		total_price = 0
-		@items.each_pair do |sku, num_items|
-			total_price_for_sku = 0
-			rem_items = num_items
-			rules_for_sku = @rules[sku].sort.reverse
-			while rem_items > 0 do
-				rules_for_sku.each do |sku_quantity, sku_price|
-					# puts "rem items of #{sku}: #{rem_items}"
-					num_of_pack_items, mod_rem_items = rem_items.divmod(sku_quantity)
-					unless num_of_pack_items.zero?
-						total_price_for_sku += num_of_pack_items * sku_price
-						rem_items = mod_rem_items
-					end
-				end				
-			end
-			total_price += total_price_for_sku
-		end
-		total_price
+		@items.inject(0) { |total, sku_item| total + price_for_sku(sku_item[0], sku_item[1]) }
 	end
 	
 end
