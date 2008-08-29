@@ -5,6 +5,10 @@
 
 require 'test/unit'
 
+class SKU
+	
+end
+
 class CheckOut
   
 	def self.process_rules(rules)
@@ -27,12 +31,20 @@ class CheckOut
 		# returns the price of num_of_sku_items of sku_id type of sku-s
 		price = 0
 		rem_items = num_of_sku_items
+		# sorting and reversing so that packages of more items come first (e.g 5, 3, 1)
 		rules_for_sku = @rules[sku_id].sort.reverse
-		while rem_items > 0 do
+		until rem_items.zero? do
 			rules_for_sku.each do |sku_quantity, sku_price|
 				num_of_pack_items, mod_rem_items = rem_items.divmod(sku_quantity)
+				# two pricing schemes are supported: 3 for 50 and buy-2-get-1-for-free
+				# TODO: still, the Checkout knows how to handle these schemes, so the coupling is strong
 				unless num_of_pack_items.zero?
-					price += num_of_pack_items * sku_price
+					if sku_price == :free
+						individual_price = rules_for_sku.detect { |price_pair| price_pair[0] == 1 }[1]
+						price += individual_price * (sku_quantity - 1)
+					else
+						price += num_of_pack_items * sku_price
+					end
 					rem_items = mod_rem_items
 				end
 			end				
@@ -59,12 +71,19 @@ if __FILE__ == $0
 		#     C     20
 		#     D     15
 
-		RULES = { "A" => { 1 => 50, 3 => 130 }, "B" => { 1 => 30, 2 => 45 }, "C" => { 1 => 20 }, "D" => { 1 => 15 } }
+		RULES = { "A" => { 1 => 50, 3 => 130 }, "B" => { 1 => 30, 2 => 45 }, "C" => { 1 => 20 }, "D" => { 1 => 15 }, "E" => { 3 => :free, 1 => 10 } }
     def price(goods)
       co = CheckOut.new(RULES)
       goods.split(//).each { |item| co.scan(item) }
       co.total
     end
+
+		# def test_sku_pricing
+		# 	sku_a = SKU.new("A", 50, { 3 => 130 })
+		# 	sku_a.class.price()
+		# 	# each third is for free
+		# 	sku_b = SKU.new("B", 30, { 3 => :free })
+		# end
 
     def test_totals
       assert_equal(  0, price(""))
@@ -82,6 +101,11 @@ if __FILE__ == $0
       assert_equal(175, price("AAABB"))
       assert_equal(190, price("AAABBD"))
       assert_equal(190, price("DABABA"))
+
+			assert_equal(20, price("EE"))
+			assert_equal(20, price("EEE"))
+			assert_equal(40, price("EEEEE"))
+			assert_equal(115, price("EEEBAB"))
     end
 
     def test_incremental
