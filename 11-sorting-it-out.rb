@@ -2,8 +2,17 @@
 
 require "test/unit"
 
+module SortedonInsertion
+	def insert(new_elt, array)
+		elt_after = array.detect { |elt| new_elt <= elt }
+		elt_after.nil? ? array.push(new_elt) : array.insert(array.index(elt_after), new_elt)
+	end
+end
+
 class Rack
-	
+
+	# include mixes in the module's methods as instance methods!
+	include SortedonInsertion
 	attr_reader :balls
 	
 	def initialize
@@ -11,21 +20,20 @@ class Rack
 	end
 		
 	def add(ball)
-		ball_after = @balls.detect { |b| ball <= b }
-		ball_after.nil? ? @balls.push(ball): @balls.insert(@balls.index(ball_after), ball)
+		insert(ball, @balls)
 	end
 	
 end
 
 class SecretDecrypter
 	
+	# extend mixes in the module's methods as class methods!
+	extend SortedonInsertion
+	
 	def self.decrypt(message)
 		# message.downcase.gsub(/[^\w]/, '').split(//).sort.join('')
 		decrypted = []
-		message.downcase.gsub(/[^\w]/, '').split(//).each do |c|
-			char_after = decrypted.detect { |dc| c <= dc }
-			char_after.nil? ? decrypted.push(c) : decrypted.insert(decrypted.index(char_after), c)
-		end
+		message.downcase.gsub(/[^\w]/, '').split(//).each { |c| insert(c, decrypted) }
 		decrypted.join
 	end
 	
