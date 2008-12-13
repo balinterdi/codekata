@@ -8,18 +8,16 @@ class NovelGenerator
   end
   
   def build_trigrams(text)
+    text.gsub!("\n"," ")
     text.gsub!(/[^\w\s\']/m,'')
-    words = text.split(/\s/)
+    words = text.split(/\s/).select { |w| !w.empty? }
     trigram_key = words[0...2].join(' ')
     words[2..words.length].each do |w|
-      debugger if w == 'monstrous'
-      # puts "XXX Trigram key: #{trigram_key}"
       @trigrams[trigram_key] ||= []
       @trigrams[trigram_key] << w
       trigram_key = trigram_key.split(/\s/)
       trigram_key.shift
       trigram_key = (trigram_key << w).join(' ')
-
     end
     @trigrams
   end
@@ -62,16 +60,9 @@ if __FILE__ == $0
 	  
 	  def test_generation
 	    ng = NovelGenerator.new
-      # a_novel_fh = File.open('heart_of_darkness.txt')
-      # a_novel = a_novel_fh.read()
-      # ng.build_trigrams(a_novel)
       ng.build_trigrams(HEART_OF_DARKNESS)
-      puts ng.trigrams.inspect
-      10.times { puts "\n" }
+      # 10.times { puts "\n" }
       puts ng.generate
-      # ng.build_trigrams("I wish I may I wish I might")
-      # assert_equal("I may I wish I may I wish I might", ng.generate)
-      # 10.times { puts ng.generate }
     end
     
 	end
