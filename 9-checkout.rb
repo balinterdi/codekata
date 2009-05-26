@@ -5,21 +5,65 @@
 
 require 'test/unit'
 
-class SKU
-	
+# SKU: Stock Keeping Unit
+
+class SKUPricing
+
+  def initialize(rules)
+    @rules = rules
+  end
+  
+  def unit_price
+    @rules.detect { |pair_price| pair_price[0] == 1 }[1]
+  end
+  
+  def get_bundle_price(num_items)
+    # returns the price of num_of_sku_items of sku_id type of sku-s
+		bundle_price = 0
+		# sorting and reversing so that packages of more items come first (e.g 5, 3, 1)
+		until num_items.zero? do
+			@rules.sort.reverse.each do |items_in_pack, price|
+				num_of_packs, num_items = num_items.divmod(items_in_pack)
+				unless num_of_packs.zero?
+					if price == :free
+            # buy-2-get-1-for-free
+						bundle_price += unit_price * (items_in_pack - 1)
+					else
+            # 3 for 50
+						bundle_price += num_of_packs * price
+					end
+				end
+			end				
+		end
+		bundle_price  		
+  end    
+  
+end
+
+class CheckoutPricing
+  def initialize(rules)
+    # rules is a Hash that tells how many items of each
+		# stock keeping units (SKUs) cost how much
+		@rules = Hash.new
+		rules.each do |sku_id, sku_rules|
+		  @rules[sku_id] = SKUPricing.new(sku_rules)
+	  end	
+  end
+  
+  def total_price(items)
+    items.inject(0) do |total, sku_item|
+      sku_id = sku_item[0]
+      num_items = sku_item[1]
+      total + @rules[sku_item[0]].get_bundle_price(sku_item[1])
+    end
+  end 
 end
 
 class CheckOut
-  
-	def self.process_rules(rules)
-		rules
-	end
-	
+  	
 	def initialize(rules)
 		@items = Hash.new
-		# rules is a Hash that tells how many items of each
-		# stock keeping units (SKUs) cost how much
-		@rules = self.class.process_rules(rules)		
+		@pricer = CheckoutPricing.new(rules)
 	end
 
 	def scan(item)
@@ -27,35 +71,10 @@ class CheckOut
 		@items[item] += 1
 	end
 	
-	def price_for_sku(sku_id, num_of_sku_items)
-		# returns the price of num_of_sku_items of sku_id type of sku-s
-		price = 0
-		rem_items = num_of_sku_items
-		# sorting and reversing so that packages of more items come first (e.g 5, 3, 1)
-		rules_for_sku = @rules[sku_id].sort.reverse
-		until rem_items.zero? do
-			rules_for_sku.each do |sku_quantity, sku_price|
-				num_of_pack_items, mod_rem_items = rem_items.divmod(sku_quantity)
-				# two pricing schemes are supported: 3 for 50 and buy-2-get-1-for-free
-				# TODO: still, the Checkout knows how to handle these schemes, so the coupling is strong
-				unless num_of_pack_items.zero?
-					if sku_price == :free
-						individual_price = rules_for_sku.detect { |price_pair| price_pair[0] == 1 }[1]
-						price += individual_price * (sku_quantity - 1)
-					else
-						price += num_of_pack_items * sku_price
-					end
-					rem_items = mod_rem_items
-				end
-			end				
-		end
-		price
-	end
-	
 	def total
 		# items: { A => 3, B => 8, C => 1 }
 		# rules: { A => { 2 => 50, 1 => 30 }, B => { 5 => 100, 3 => 65, 1 => 25 }, C => { 3 => 100, 1 => 40 } }
-		@items.inject(0) { |total, sku_item| total + price_for_sku(sku_item[0], sku_item[1]) }
+		@pricer.total_price(@items)
 	end
 	
 end
