@@ -1,5 +1,5 @@
 # see http://codekata.pragprog.com/2007/01/kata_nine_back_.html
-# The challenge description doesn’t mention the format of the pricing rules. How can these be specified in such a way that the checkout doesn’t know about particular items and their pricing strategies? How can we make the design flexible enough so that we can add new styles of pricing rule in the future? 
+# The challenge description doesn’t mention the format of the pricing rules. How can these be specified in such a way that the checkout doesn’t know about particular items and their pricing strategies? How can we make the design flexible enough so that we can add new styles of pricing rule in the future?
 
 # The above meaning, not only "3 for 130" type of pricing rules, but also "buy 2, get one for free"
 
@@ -12,32 +12,30 @@ class SKUPricing
   def initialize(rules)
     @rules = rules
   end
-  
+
   def unit_price
     @rules.detect { |pair_price| pair_price[0] == 1 }[1]
   end
-  
+
   def get_bundle_price(num_items)
     # returns the price of num_of_sku_items of sku_id type of sku-s
-		bundle_price = 0
-		# sorting and reversing so that packages of more items come first (e.g 5, 3, 1)
-		until num_items.zero? do
-			@rules.sort.reverse.each do |items_in_pack, price|
-				num_of_packs, num_items = num_items.divmod(items_in_pack)
-				unless num_of_packs.zero?
-					if price == :free
-            # buy-2-get-1-for-free
-						bundle_price += unit_price * (items_in_pack - 1)
-					else
-            # 3 for 50
-						bundle_price += num_of_packs * price
-					end
+    @rules.sort.reverse.inject(0) do |bundle_price, rule|
+      items_in_pack, price = rule
+      num_of_packs, num_items = num_items.divmod(items_in_pack)
+      if num_of_packs.zero?
+        bundle_price
+      else
+				if price == :free
+          # buy-2-get-1-for-free
+					bundle_price + ( unit_price * (items_in_pack - 1) )
+				else
+          # 3 for 50
+					bundle_price + ( num_of_packs * price )
 				end
-			end				
-		end
-		bundle_price  		
-  end    
-  
+      end
+    end
+  end
+
 end
 
 class CheckoutPricing
@@ -47,20 +45,20 @@ class CheckoutPricing
 		@rules = Hash.new
 		rules.each do |sku_id, sku_rules|
 		  @rules[sku_id] = SKUPricing.new(sku_rules)
-	  end	
+	  end
   end
-  
+
   def total_price(items)
     items.inject(0) do |total, sku_item|
       sku_id = sku_item[0]
       num_items = sku_item[1]
       total + @rules[sku_item[0]].get_bundle_price(sku_item[1])
     end
-  end 
+  end
 end
 
 class CheckOut
-  	
+
 	def initialize(rules)
 		@items = Hash.new
 		@pricer = CheckoutPricing.new(rules)
@@ -70,13 +68,13 @@ class CheckOut
 		@items[item] ||= 0
 		@items[item] += 1
 	end
-	
+
 	def total
 		# items: { A => 3, B => 8, C => 1 }
 		# rules: { A => { 2 => 50, 1 => 30 }, B => { 5 => 100, 3 => 65, 1 => 25 }, C => { 3 => 100, 1 => 40 } }
 		@pricer.total_price(@items)
 	end
-	
+
 end
 
 if __FILE__ == $0
