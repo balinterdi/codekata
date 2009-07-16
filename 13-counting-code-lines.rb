@@ -22,9 +22,15 @@ if __FILE__ == $0
       end
     end
 
-    # def count_lines(text)
-    #
-    # end
+    def count_lines(text)
+      text = text.split("\n")
+      in_multiline_comment = false
+      text.inject(0) do |loc, line|
+        # puts "XXX Line: #{line} In multiline comment? #{in_multiline_comment} LOC: #{loc}"
+        result, in_multiline_comment = is_comment(line, in_multiline_comment)
+        loc + (result ? 0 : 1)
+      end
+    end
 
     def test_empty_line_is_comment
       line = "   "
@@ -82,16 +88,6 @@ if __FILE__ == $0
 
     # ----
     def test_count_lines_1
-      def count_lines(text)
-        text = text.split("\n")
-        in_multiline_comment = false
-        text.inject(0) do |loc, line|
-          # puts "XXX Line: #{line} In multiline comment? #{in_multiline_comment} LOC: #{loc}"
-          result, in_multiline_comment = is_comment(line, in_multiline_comment)
-          loc + (result ? 0 : 1)
-        end
-      end
-
       text = %q(
       // This file contains 3 lines of code
       public interface Dave {
@@ -105,16 +101,6 @@ if __FILE__ == $0
     end
 
     def test_count_lines_2
-      def count_lines(text)
-        text = text.split("\n")
-        in_multiline_comment = false
-        text.inject(0) do |loc, line|
-          # puts "XXX Line: #{line} In multiline comment? #{in_multiline_comment} LOC: #{loc}"
-          result, in_multiline_comment = is_comment(line, in_multiline_comment)
-          loc + (result ? 0 : 1)
-        end
-      end
-
       text = %q(
          /*****
           * This is a test program with 5 lines of code
