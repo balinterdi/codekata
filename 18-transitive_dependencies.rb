@@ -19,13 +19,12 @@ class Dependencies
   end
 
   def dependencies_for_with_acc(klass, klasses_to_check, all_deps)
-    # puts "klasses to check: #{klasses_to_check.inspect} all_deps: #{all_deps.inspect}"
-    return all_deps if klasses_to_check.empty?
+    return all_deps.reject { |dep| dep == klass } if klasses_to_check.empty?
     indirect_deps = klasses_to_check.map do |dep_klass|
       direct_dependencies_for(dep_klass)
     end.flatten.sort.uniq
-    indirect_deps_without_klass = indirect_deps.reject { |dep_klass| all_deps.include?(dep_klass) }
-    dependencies_for_with_acc(klass, indirect_deps_without_klass, all_deps + indirect_deps_without_klass)
+    indirect_deps_but_already_checked = indirect_deps.reject { |dep_klass| all_deps.include?(dep_klass) }
+    dependencies_for_with_acc(klass, indirect_deps_but_already_checked, all_deps + indirect_deps_but_already_checked)
   end
 end
 
@@ -47,6 +46,18 @@ if __FILE__ == $0
       assert_equal( %w{ F H },           dep.dependencies_for('E'))
       assert_equal( %w{ H },             dep.dependencies_for('F'))
     end
+
+    def test_circular
+      dep = Dependencies.new
+      dep.add_direct('A', %w{ B } )
+      dep.add_direct('B', %w{ C } )
+      dep.add_direct('C', %w{ A } )
+
+      assert_equal( %w{ B C },   dep.dependencies_for('A'))
+      assert_equal( %w{ A C },   dep.dependencies_for('B'))
+      assert_equal( %w{ A B },   dep.dependencies_for('C'))
+    end
+
   end
 end
 
